@@ -12,6 +12,9 @@ class ListCharacterScreen extends StatefulWidget {
 class _ListCharacterScreenState extends State<ListCharacterScreen> with SingleTickerProviderStateMixin {
   RandmAPI randmAPI = RandmAPI();
   late AnimationController _controllerA;
+  bool isLoading=true, isGrid=false;
+  int contar=0;
+  late List<CharacterDao>? charas;
 
   @override
   void initState() {
@@ -26,19 +29,38 @@ class _ListCharacterScreenState extends State<ListCharacterScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    if(isLoading&&contar<=0)
+    {
+      randmAPI.getAllCharacters().then((characters) {
+        setState(() {
+          charas=characters;
+          contar++;
+          isLoading=false;
+        });
+      },);
+      return Center(
+        child: CircularProgressIndicator(),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
-        title: Text('Rick and Morty Characters'),
+        title: Image.asset('assets/logo2.png', fit: BoxFit.cover,),
         actions: [
           GestureDetector(
             onTap: () {
               if(_controllerA.isCompleted)
               {
                 _controllerA.reverse();
+                setState(() {
+                  isGrid=false;
+                });
               }
               else
               {
                 _controllerA.forward();
+                setState(() {
+                  isGrid=true;
+                });
               }
             },
             child: AnimatedIcon(
@@ -49,12 +71,23 @@ class _ListCharacterScreenState extends State<ListCharacterScreen> with SingleTi
           ),
         ],
       ),
-      body: FutureBuilder(
+      body: Container(
+        child: isGrid? _gridViewCharacters(charas): _listViewCharacters(charas),
+      ),
+      /*FutureBuilder(
           future: randmAPI.getAllCharacters(),
           builder: (BuildContext context, AsyncSnapshot<List<CharacterDao>?> snapshot) {
             if(snapshot.hasData)
             {
-              return _listViewCharacters(snapshot.data);
+              if(_controllerA.isCompleted)
+              {
+                print("Si llega");
+                return _gridViewCharacters(snapshot.data);
+              }
+              else
+              {
+                return _listViewCharacters(snapshot.data);
+              }
             }
             else
             {
@@ -68,8 +101,57 @@ class _ListCharacterScreenState extends State<ListCharacterScreen> with SingleTi
               }
             }
           },
-      )
+      )*/
     );
+  }
+
+  Widget _gridViewCharacters(List<CharacterDao>? snapshot) {
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 200,
+        childAspectRatio: 3 / 2,
+        crossAxisSpacing: 7,
+        mainAxisSpacing: 7
+      ),
+      itemCount: snapshot!.length,
+      itemBuilder: (context, index) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            FadeInImage(
+              fadeInDuration: Duration(milliseconds: 500),
+              placeholder: AssetImage('assets/loading_chara.gif'),
+              image: NetworkImage('${snapshot[index].image!}'),
+            ),
+            Container(
+              height: 50,
+              width: MediaQuery.of(context).size.width,
+              color: Colors.black.withOpacity(.6),
+              child: ListTile(
+                onTap: () => Navigator.pushNamed(
+                  context, '/detail',
+                  arguments: snapshot[index].id,
+                ).then((value) {
+                  setState(() {
+                    //Sasa
+                  });
+                }),
+                title: Text(
+                  '${snapshot[index].name}',
+                  style: TextStyle(color: Colors.white, fontSize: 15),
+                ),
+                trailing: Text(
+                  '${snapshot[index].status}',
+                  style: TextStyle(color: Colors.white, fontSize: 15),
+                ), //Icon(Icons.chevron_right, color: Colors.white, size:30),
+              ),
+            ),
+          ],
+        ),
+      );
+    },);
   }
 
   Widget _listViewCharacters(List<CharacterDao>? snapshot) {
@@ -77,7 +159,6 @@ class _ListCharacterScreenState extends State<ListCharacterScreen> with SingleTi
       separatorBuilder: (context, index) => Divider(color: Colors.black,),
       itemCount: snapshot!.length,
       itemBuilder: (context, index) {
-      //return Text(snapshot![0].name!);
       return ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: Stack(
@@ -95,7 +176,6 @@ class _ListCharacterScreenState extends State<ListCharacterScreen> with SingleTi
               child: ListTile(
                 onTap: () => Navigator.pushNamed(
                   context, '/detail',
-                  //arguments: snapshot[index],
                   arguments: snapshot[index].id,
                 ).then((value) {
                   setState(() {

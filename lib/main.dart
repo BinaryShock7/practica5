@@ -28,6 +28,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
+      theme: ThemeData(
+        backgroundColor: Color.fromARGB(255, 18, 175, 201)
+      ),
       home: const ListCharacterScreen(),
       routes: {
         '/detail' : (BuildContext context) => DetailCharacterScreen(),
